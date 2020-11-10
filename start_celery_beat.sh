@@ -8,7 +8,7 @@ import psycopg2
 import os
 
 try:
-    conn = psycopg2.connect(dbname=os.environ["NAME"], user=os.environ["USER"], password=os.environ["PASSWORD"], host="db")
+    conn = psycopg2.connect(dbname=os.environ["POSTGRES_DB"], user=os.environ["POSTGRES_USER"], password=os.environ["POSTGRES_PASSWORD"], host=os.environ["HOST"])
 except psycopg2.OperationalError:
     sys.exit(-1)
 sys.exit(0)
