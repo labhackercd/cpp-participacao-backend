@@ -8,3 +8,6 @@ python-decouple
 django-extensions
 requests
 django-cors-headers
+coverage
+flake8
+pytest
