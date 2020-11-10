@@ -1,5 +1,2 @@
-from django.test import TestCase
-
-
-def test_initial():
-    assert True == True
+def test_example():
+    assert True

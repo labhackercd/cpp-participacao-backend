@@ -69,8 +69,10 @@ WSGI_APPLICATION = 'participacao.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.' + config('DATABASE_ENGINE', default='sqlite3'),
-        'NAME': config('POSTGRES_DB', default=os.path.join(BASE_DIR, 'db.sqlite3')),
+        'ENGINE': 'django.db.backends.' + config('DATABASE_ENGINE',
+                                                 default='sqlite3'),
+        'NAME': config('POSTGRES_DB', default=os.path.join(BASE_DIR,
+                                                           'db.sqlite3')),
         'USER': config('POSTGRES_USER', default=''),
         'PASSWORD': config('POSTGRES_PASSWORD', default=''),
         'HOST': config('HOST', default=''),
@@ -84,16 +86,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',  # NOQA
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',  # NOQA
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',  # NOQA
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',  # NOQA
     },
 ]
 
