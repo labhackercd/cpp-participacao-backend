@@ -1,4 +1,18 @@
-version: "3"
+version: "3.8"
+
+x-database-variables: &database-variables
+  POSTGRES_DB: participacao
+  POSTGRES_USER: root
+  POSTGRES_PASSWORD: participacao
+
+x-backend-variables: &backend-variables
+  SECRET_KEY: key
+  DEBUG: "True"
+  ALLOWED_HOSTS: "*"
+  DATABASE_ENGINE: postgresql
+  HOST: db
+  PORT: 5432
+  REDIS_SERVER: redis://redis:6379
 
 services:
   db:
@@ -6,9 +20,7 @@ services:
     image: postgres
     restart: on-failure
     environment:
-      - POSTGRES_DB=participacao
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=participacao
+      <<: *database-variables
 
   backend:
     container_name: participacao-backend
@@ -18,16 +30,8 @@ services:
     volumes:
       - .:/var/labhacker/participacao_backend
     environment:
-      - SECRET_KEY=key
-      - DEBUG=True
-      - ALLOWED_HOSTS=*
-      - DATABASE_ENGINE=postgresql
-      - NAME=participacao
-      - USER=root
-      - PASSWORD=participacao
-      - HOST=db
-      - PORT=5432
-      - REDIS_SERVER=redis://redis:6379
+      <<: *database-variables
+      <<: *backend-variables
     ports:
       - "8000:8000"
     depends_on:
@@ -46,15 +50,8 @@ services:
     volumes:
       - .:/var/labhacker/participacao_backend
     environment:
-      - SECRET_KEY=key
-      - DEBUG=True
-      - DATABASE_ENGINE=postgresql
-      - NAME=participacao
-      - USER=root
-      - PASSWORD=participacao
-      - HOST=db
-      - PORT=5432
-      - REDIS_SERVER=redis://redis:6379
+      <<: *database-variables
+      <<: *backend-variables
     depends_on:
       - db
       - redis
@@ -67,15 +64,8 @@ services:
     volumes:
       - .:/var/labhacker/participacao_backend
     environment:
-      - SECRET_KEY=key
-      - DEBUG=True
-      - DATABASE_ENGINE=postgresql
-      - NAME=participacao
-      - USER=root
-      - PASSWORD=participacao
-      - HOST=db
-      - PORT=5432
-      - REDIS_SERVER=redis://redis:6379
+      <<: *database-variables
+      <<: *backend-variables
     depends_on:
       - db
       - redis
