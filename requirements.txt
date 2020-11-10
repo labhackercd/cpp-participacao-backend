@@ -1,0 +1,10 @@
+Django
+psycopg2-binary
+celery==4.4.3
+redis
+django-celery-results
+django-celery-beat
+python-decouple
+django-extensions
+requests
+django-cors-headers

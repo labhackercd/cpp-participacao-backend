@@ -1,0 +1,85 @@
+version: "3"
+
+services:
+  db:
+    container_name: participacao-db
+    image: postgres
+    restart: on-failure
+    environment:
+      - POSTGRES_DB=participacao
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=participacao
+
+  backend:
+    container_name: participacao-backend
+    build: .
+    command: ./start_web.sh
+    restart: on-failure
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      - SECRET_KEY=key
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_ENGINE=postgresql
+      - NAME=participacao
+      - USER=root
+      - PASSWORD=participacao
+      - HOST=db
+      - PORT=5432
+      - REDIS_SERVER=redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    container_name: participacao-redis
+    image: "redis:alpine"
+    command: redis-server
+
+  worker:
+    container_name: participacao-worker
+    build: .
+    command: bash -c "cd src && celery -A participacao worker -l info"
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      - SECRET_KEY=key
+      - DEBUG=True
+      - DATABASE_ENGINE=postgresql
+      - NAME=participacao
+      - USER=root
+      - PASSWORD=participacao
+      - HOST=db
+      - PORT=5432
+      - REDIS_SERVER=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+      - backend
+
+  beat:
+    container_name: participacao-beat
+    build: .
+    command: ./start_celery_beat.sh
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      - SECRET_KEY=key
+      - DEBUG=True
+      - DATABASE_ENGINE=postgresql
+      - NAME=participacao
+      - USER=root
+      - PASSWORD=participacao
+      - HOST=db
+      - PORT=5432
+      - REDIS_SERVER=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+      - backend
+
+volumes:
+  postgres_data:
