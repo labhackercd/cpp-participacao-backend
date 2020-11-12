@@ -29,14 +29,14 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_extensions',
 
-    ## Apps
+    # Apps
     'apps.audiencias',
     'apps.edemocracia',
     'apps.pauta',
     'apps.wikilegis',
 
 
-    ## Third apps
+    # Third apps
     'corsheaders',
 ]
 
