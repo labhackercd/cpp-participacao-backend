@@ -22,7 +22,9 @@ before_script:
 script:
   - docker-compose up -d
   - docker-compose ps
-  - docker-compose run backend sh -c "coverage run -m pytest src && flake8 src && coverage report"
+  - docker-compose run backend sh -c "flake8 src"
+  - docker-compose run backend sh -c "coverage run -m pytest src"
+  - docker-compose run backend sh -c "coverage report"
 after_success:
-  - docker-compose run backend sh -c "coverage run -m pytest src && flake8 src && coverage xml"
+  - docker-compose run backend sh -c "coverage xml"
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
