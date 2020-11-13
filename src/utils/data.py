@@ -27,7 +27,8 @@ def get_service(api_name, api_version, scopes, key_file_location):
 
 
 def get_analytics_data(ga_id, start_date, end_date, metrics, dimensions=None,
-                       filters=None, max_results=10000): 
+                       filters=None, max_results=10000):
+
     service = get_service(
         api_name='analytics',
         api_version='v3',
@@ -46,12 +47,13 @@ def get_analytics_data(ga_id, start_date, end_date, metrics, dimensions=None,
     }
 
     first_run = True
+    results = {}
     rows = []
 
-    while first_run == True or results.get('nextLink'):
-        if first_run == False:
-            params['start_index'] = (int(params['start_index']) + 
-                int(params['max_results']))
+    while first_run or results.get('nextLink'):
+        if not first_run:
+            params['start_index'] = (int(params['start_index']) +
+                                     int(params['max_results']))
 
         results = service.data().ga().get(**params).execute()
         rows += results['rows']
