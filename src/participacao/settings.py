@@ -139,6 +139,11 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # Url to request data
 AUDIENCIAS_API_URL = config('AUDIENCIAS_API_URL', default='')
+EDEMOCRACIA_API_URL = config('EDEMOCRACIA_API_URL', default='')
+
+# Google Analytics
+GA_SCOPE = config('GA_SCOPE', default='')
+GA_KEY = config('GA_KEY', default='')
 
 # Url prefix
 URL_PREFIX = config('URL_PREFIX', default='')
