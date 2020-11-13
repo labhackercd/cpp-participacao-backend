@@ -1,6 +1,3 @@
-
-from decouple import config
-from datetime import datetime, timedelta
 from apiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 from django.conf import settings
