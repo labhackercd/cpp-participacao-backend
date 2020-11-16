@@ -119,7 +119,7 @@ USE_I18N = config('USE_I18N', cast=bool, default=True)
 
 USE_L10N = config('USE_L10N', cast=bool, default=True)
 
-USE_TZ = config('USE_TZ', cast=bool, default=False)
+USE_TZ = config('USE_TZ', cast=bool, default=True)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
@@ -136,6 +136,8 @@ CELERY_CACHE_BACKEND = 'django-cache'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Sao_Paulo'
+
 
 # Url to request data
 AUDIENCIAS_API_URL = config('AUDIENCIAS_API_URL', default='')
@@ -155,3 +157,6 @@ CORS_ALLOW_METHODS = (
     'GET',
     'OPTIONS'
 )
+
+EDEMOCRACIA_URL = config('EDEMOCRACIA_URL',
+                         default='https://edemocracia.camara.leg.br')

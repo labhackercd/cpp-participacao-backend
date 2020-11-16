@@ -9,7 +9,7 @@ class GeneralAnalysisAudiencias(AnalysisMixin):
 
 
 class RoomAnalysisAudiencias(AnalysisMixin):
-    room_id = models.IntegerField(verbose_name=_("id room"), db_index=True)
-    title = models.CharField(verbose_name=_("title"), max_length=200)
+    room_id = models.IntegerField(verbose_name=_("id room"), db_index=True,
+                                  null=True, blank=True)
     meeting_code = models.IntegerField(verbose_name=_("id code in SILEG"),
-                                       db_index=True)
+                                       db_index=True, null=True, blank=True)
