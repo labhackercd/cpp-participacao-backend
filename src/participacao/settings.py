@@ -138,11 +138,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/Sao_Paulo'
 
-
-# Url to request data
-AUDIENCIAS_API_URL = config('AUDIENCIAS_API_URL', default='')
-EDEMOCRACIA_API_URL = config('EDEMOCRACIA_API_URL', default='')
-
 # Google Analytics
 GA_SCOPE = config('GA_SCOPE', default='')
 GA_KEY = config('GA_KEY', default='')
