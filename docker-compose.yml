@@ -1,0 +1,81 @@
+version: "3.8"
+
+x-database-variables: &database-variables
+  POSTGRES_DB: participacao
+  POSTGRES_USER: root
+  POSTGRES_PASSWORD: participacao
+  PGDATA: /var/lib/postgresql/data/
+
+x-backend-variables: &backend-variables
+  SECRET_KEY: key
+  DEBUG: "True"
+  ALLOWED_HOSTS: "*"
+  DATABASE_ENGINE: postgresql
+  HOST: db
+  PORT: 5432
+  REDIS_SERVER: redis://redis:6379
+
+services:
+  db:
+    container_name: participacao-db
+    image: postgres
+    restart: on-failure
+    environment:
+      <<: *database-variables
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  backend:
+    container_name: participacao-backend
+    build: .
+    command: ./start_web.sh
+    restart: on-failure
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      <<: *database-variables
+      <<: *backend-variables
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    container_name: participacao-redis
+    image: "redis:alpine"
+    command: redis-server
+
+  worker:
+    container_name: participacao-worker
+    build: .
+    command: bash -c "cd src && celery -A participacao worker -l info"
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      <<: *database-variables
+      <<: *backend-variables
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - backend
+
+  beat:
+    container_name: participacao-beat
+    build: .
+    command: ./start_celery_beat.sh
+    volumes:
+      - .:/var/labhacker/participacao_backend
+    environment:
+      <<: *database-variables
+      <<: *backend-variables
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - backend
+      - worker
+
+volumes:
+  postgres_data:

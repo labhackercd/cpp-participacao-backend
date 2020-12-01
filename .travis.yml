@@ -1,0 +1,30 @@
+language: python
+python:
+  - "3.8"
+  - "3.8-dev"
+matrix:
+  allow_failures:
+    - python: 3.8-dev
+sudo: required
+services:
+  - docker
+env:
+  - DOCKER_COMPOSE_VERSION=1.25.5
+before_install:
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+script:
+  - docker-compose up -d
+  - docker-compose ps
+  - docker-compose run backend sh -c "flake8 src"
+  - docker-compose run backend sh -c "coverage run -m pytest src"
+  - docker-compose run backend sh -c "coverage report"
+after_success:
+  - docker-compose run backend sh -c "coverage xml"
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
