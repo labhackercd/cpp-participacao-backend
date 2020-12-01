@@ -4,6 +4,7 @@ x-database-variables: &database-variables
   POSTGRES_DB: participacao
   POSTGRES_USER: root
   POSTGRES_PASSWORD: participacao
+  PGDATA: /var/lib/postgresql/data/
 
 x-backend-variables: &backend-variables
   SECRET_KEY: key
@@ -21,6 +22,8 @@ services:
     restart: on-failure
     environment:
       <<: *database-variables
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
 
   backend:
     container_name: participacao-backend
@@ -52,6 +55,7 @@ services:
     environment:
       <<: *database-variables
       <<: *backend-variables
+    restart: always
     depends_on:
       - db
       - redis
@@ -66,10 +70,12 @@ services:
     environment:
       <<: *database-variables
       <<: *backend-variables
+    restart: always
     depends_on:
       - db
       - redis
       - backend
+      - worker
 
 volumes:
   postgres_data:

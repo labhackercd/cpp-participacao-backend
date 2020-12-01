@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='RoomAnalysisAudiencias',
+            name='EdemocraciaAnalysis',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateTimeField(auto_now_add=True, verbose_name='created')),
@@ -21,30 +21,13 @@ class Migration(migrations.Migration):
                 ('end_date', models.DateField(db_index=True, verbose_name='end date')),
                 ('data', models.JSONField(blank=True, null=True, verbose_name='data')),
                 ('period', models.CharField(choices=[('daily', 'Daily'), ('monthly', 'Monthly'), ('semiannually', 'Semiannually'), ('yearly', 'Yearly'), ('all', 'All the time')], db_index=True, default='daily', max_length=200, verbose_name='period')),
-                ('room_id', models.IntegerField(blank=True, db_index=True, null=True, unique=True, verbose_name='id room')),
-                ('meeting_code', models.IntegerField(blank=True, db_index=True, null=True, verbose_name='id code in SILEG')),
             ],
             options={
                 'abstract': False,
             },
         ),
         migrations.CreateModel(
-            name='GeneralAnalysisAudiencias',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', models.DateTimeField(auto_now=True, verbose_name='modified')),
-                ('start_date', models.DateField(db_index=True, verbose_name='start date')),
-                ('end_date', models.DateField(db_index=True, verbose_name='end date')),
-                ('data', models.JSONField(blank=True, null=True, verbose_name='data')),
-                ('period', models.CharField(choices=[('daily', 'Daily'), ('monthly', 'Monthly'), ('semiannually', 'Semiannually'), ('yearly', 'Yearly'), ('all', 'All the time')], db_index=True, default='daily', max_length=200, verbose_name='period')),
-            ],
-            options={
-                'unique_together': {('start_date', 'period')},
-            },
-        ),
-        migrations.CreateModel(
-            name='AudienciaGA',
+            name='EdemocraciaGA',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateTimeField(auto_now_add=True, verbose_name='created')),

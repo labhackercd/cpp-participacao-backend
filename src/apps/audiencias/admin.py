@@ -5,8 +5,13 @@ from .models import GeneralAnalysisAudiencias, RoomAnalysisAudiencias
 
 @admin.register(GeneralAnalysisAudiencias)
 class GeneralAnalysisAudienciasAdmin(admin.ModelAdmin):
-    list_display = ('id', 'start_date', 'end_date', 'data')
-    list_filter = ('start_date', 'end_date')
+    list_display = (
+        'id',
+        'start_date',
+        'end_date',
+        'period',
+    )
+    list_filter = ('created', 'modified', 'start_date', 'end_date', 'period')
 
 
 @admin.register(RoomAnalysisAudiencias)
@@ -15,8 +20,8 @@ class RoomAnalysisAudienciasAdmin(admin.ModelAdmin):
         'id',
         'start_date',
         'end_date',
-        'data',
+        'period',
         'room_id',
         'meeting_code',
     )
-    list_filter = ('start_date', 'end_date')
+    list_filter = ('created', 'modified', 'start_date', 'end_date')

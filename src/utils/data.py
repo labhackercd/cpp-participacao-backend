@@ -26,8 +26,8 @@ def get_service(api_name, api_version, scopes, key_file_location):
     return service
 
 
-def get_analytics_data(ga_id, start_date, end_date, metrics, dimensions=None,
-                       filters=None, max_results=10000):
+def get_analytics_data(ga_id, start_date, end_date, metrics=[], dimensions=[],
+                       filters=[], max_results=10000):
 
     service = get_service(
         api_name='analytics',
@@ -40,11 +40,14 @@ def get_analytics_data(ga_id, start_date, end_date, metrics, dimensions=None,
         'start_date': start_date,
         'end_date': end_date,
         'metrics': ','.join(metrics),
-        'dimensions': ','.join(dimensions),
-        'filters': filters,
         'start_index': 1,
         'max_results': max_results
     }
+
+    if filters:
+        params['filters'] = ','.join(filters)
+    if dimensions:
+        params['dimensions'] = ','.join(dimensions)
 
     first_run = True
     results = {}

@@ -1,0 +1,6 @@
+[run]
+source = src/,src/apps/,src/utils
+omit = *migrations*,**_init__.py,*manage.py,**participacao/*
+
+[report]
+show_missing = True
