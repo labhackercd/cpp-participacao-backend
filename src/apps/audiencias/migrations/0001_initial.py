@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='RoomAnalysisAudiencias',
+            name='GeneralAnalysisAudiencias',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateTimeField(auto_now_add=True, verbose_name='created')),
@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='GeneralAnalysisAudiencias',
+            name='RoomAnalysisAudiencias',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateTimeField(auto_now_add=True, verbose_name='created')),
