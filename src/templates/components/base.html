@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% endblock title %}</title>
+  <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="grid">
+    <div class="content">
+      <asside class="space-left"></asside>
+      <div class="center">
+        <div class="estudio-logo">
+          <img src="{% static 'img/logo_participa.svg' %}" alt="Logo Dashboard Participa"/>
+        </div>
+        <section class="middle">
+
+          {% block content %}
+
+          {% endblock content %}
+
+        </section>
+        <div class="camara-logo">
+          <img src="{% static 'img/logo_camara.svg' %}" alt="Logo da Câmara dos Deputados" />
+        </div>
+      </div>
+    </div>
+    <asside class="sidebar"></asside>
+  </div>
+</body>
+
+</html>

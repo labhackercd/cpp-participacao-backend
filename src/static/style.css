@@ -1,0 +1,106 @@
+body {
+    font-family: 'Open Sans', sans-serif;
+    margin: 0;
+    border: 0;
+  }
+  h1 {
+    color: #fff;
+  }
+  .grid {
+    display: grid;
+    background-color: #00AF82; /* verde-camara-light */
+    height: 100vh;
+    font-family: 'Open Sans', sans-serif;
+  }
+  .content {
+    background-color: #121212; /* cinza */
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 5fr 4fr;
+  }
+  .center {
+    margin: 3rem 3rem 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .camara-logo {
+    align-self: flex-start;
+  }
+  .estudio-logo {
+    align-self: flex-start;
+  }
+  .middle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 60%;
+  }
+  .recover-pass {
+    display: flex;
+    flex-direction: column;
+  }
+  .email-input {
+    padding: 12px 20px;
+    border: 3px 3px 0px 0px solid #C4C4C4;
+    border-radius: 4px;
+    background-color: #2F2F2F;
+    width: 60%;
+  }
+  .password-input {
+    padding: 12px 20px;
+    border: 3px 3px 0px 0px solid #C4C4C4;
+    margin-top: 5px; 
+    border-radius: 4px;
+    background-color: #2F2F2F;
+    width: 60%;
+    color: #fff;
+  }
+  .text-area {
+    display: flex;
+    flex-direction: column;
+    margin: -4rem 0 1rem 0;
+  }
+  .title {
+    color: #FFFFFF;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600;
+    font-size: 24;
+  }
+  .explanatory-text {
+    color: #FFFFFF;
+    font-size: 16;
+    width: 60%;
+  }
+  .email-label {
+    color: #666;
+    margin: 0 0 0.2rem 0;
+  }
+  .button {
+    background-color: #00C354;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin: 1rem 0;
+    width: 35%;
+    height: 36px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 13px; /* equivalent to h5 */
+    font-weight: bold;
+  }
+  .form-error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    height: 50%;
+  }
+  .errorlist {
+    padding-left: 0;
+    color: #A2A2A2;
+    list-style-type: none;
+    width: 100%;
+  }
