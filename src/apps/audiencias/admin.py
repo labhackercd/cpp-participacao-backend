@@ -1,10 +1,15 @@
 from django.contrib import admin
 
 from .models import GeneralAnalysisAudiencias, RoomAnalysisAudiencias
+from django.db import models
+from django_json_widget.widgets import JSONEditorWidget
 
 
 @admin.register(GeneralAnalysisAudiencias)
 class GeneralAnalysisAudienciasAdmin(admin.ModelAdmin):
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONEditorWidget},
+    }
     list_display = (
         'id',
         'start_date',
@@ -16,6 +21,9 @@ class GeneralAnalysisAudienciasAdmin(admin.ModelAdmin):
 
 @admin.register(RoomAnalysisAudiencias)
 class RoomAnalysisAudienciasAdmin(admin.ModelAdmin):
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONEditorWidget},
+    }
     list_display = (
         'id',
         'start_date',

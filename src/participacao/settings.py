@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 
     # Third apps
     'corsheaders',
+    'django_json_widget',
 ]
 
 MIDDLEWARE = [
