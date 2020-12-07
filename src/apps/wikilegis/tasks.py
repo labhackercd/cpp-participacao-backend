@@ -4,7 +4,11 @@ from apps.wikilegis.models import (
     GeneralAnalysisWikilegis, DocumentAnalysisWikilegis)
 from django.core.exceptions import ObjectDoesNotExist
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
+import calendar
+from django.db.models.functions import Cast, Coalesce
+from django.db.models import Func, F, IntegerField, Sum
+from django.db.models.expressions import Value
 
 FIRST_YEAR = 2019
 FIRST_MONTH = 1
@@ -127,3 +131,118 @@ def get_sugestions(periods=None):
 
     GeneralAnalysisWikilegis.objects.bulk_create(
         general_analysis, batch_size, ignore_conflicts=True)
+
+
+def count_data_analysis(analysis):
+    votes = Cast(Func(F('data'), Value('votes'),
+                      function='jsonb_extract_path_text'), IntegerField())
+    suggestions = Cast(Func(F('data'), Value('suggestions'),
+                            function='jsonb_extract_path_text'),
+                       IntegerField())
+
+    data = analysis.aggregate(
+        votes=Coalesce(Sum(votes), 0),
+        suggestions=Coalesce(Sum(suggestions), 0),
+    )
+
+    return data
+
+
+@app.task(name="wikilegis.get_month_analysis")
+def get_month_analysis(month=None, year=None):
+    if month is None:
+        today = date.today()
+        last_month = today.replace(day=1) - timedelta(days=1)
+        month = last_month.month
+        year = last_month.year
+    save_monthly_analysis(month, year)
+
+
+@app.task(name="wikilegis.get_yearly_analysis")
+def get_yearly_analysis(year=None):
+    if year is None:
+        today = date.today()
+        year = today.year - 1
+    save_yearly_analysis(year)
+
+
+@app.task(name="wikilegis.get_all_analysis")
+def get_all_analysis():
+    save_all_analysis()
+
+
+@app.task(name='wikilegis.get_all_period_analysis')
+def get_all_period_analysis():
+    today = date.today()
+    LAST_YEAR = today.year
+    for year in range(FIRST_YEAR, LAST_YEAR + 1):
+        for month in range(FIRST_MONTH, LAST_MONTH + 1):
+            if year == today.year and month == today.month:
+                break
+            save_monthly_analysis(month, year)
+        if year < today.year:
+            save_yearly_analysis(year)
+    save_all_analysis()
+
+
+def save_monthly_analysis(month, year):
+    monthly_period = 'monthly'
+    minimal_period = 'daily'
+
+    daily_analysis = GeneralAnalysisWikilegis.objects.filter(
+        period=minimal_period, start_date__month=month, start_date__year=year,
+        end_date__month=month, end_date__year=year).values('data')
+
+    if daily_analysis.count() > 0:
+        range_date = calendar.monthrange(year, month)
+        last_day = range_date[1]
+        start_date = DATA_FORMAT.format(year, month, FIRST_DAY)
+        end_date = DATA_FORMAT.format(year, month, last_day)
+        data = count_data_analysis(daily_analysis)
+
+        get_or_create_general_analyse(
+            start_date, end_date, data, monthly_period)
+
+
+def save_yearly_analysis(year):
+    yearly_period = 'yearly'
+    minimal_period = 'monthly'
+
+    monthly_analysis = GeneralAnalysisWikilegis.objects.filter(
+        period=minimal_period, start_date__year=year,
+        end_date__year=year).values('data')
+
+    if monthly_analysis.count() > 0:
+        start_date = DATA_FORMAT.format(year, FIRST_MONTH, FIRST_DAY)
+        end_date = DATA_FORMAT.format(year, LAST_MONTH, LAST_DAY)
+        data = count_data_analysis(monthly_analysis)
+
+        get_or_create_general_analyse(
+            start_date, end_date, data, yearly_period)
+
+
+def save_all_analysis():
+    daily_period = 'daily'
+    monthly_period = 'monthly'
+    yearly_period = 'yearly'
+    period = 'all'
+
+    today = date.today()
+    end_date = today - timedelta(days=1)
+
+    year_analysis = GeneralAnalysisWikilegis.objects.filter(
+        period=yearly_period)
+    month_analysis = GeneralAnalysisWikilegis.objects.filter(
+        period=monthly_period, start_date__year=today.year,
+        end_date__year=today.year)
+    daily_analysis = GeneralAnalysisWikilegis.objects.filter(
+        period=daily_period, start_date__year=today.year,
+        start_date__month=today.month, end_date__year=today.year,
+        end_date__month=today.month)
+    start_date = DATA_FORMAT.format(FIRST_YEAR, FIRST_MONTH, FIRST_DAY)
+
+    all_analysis = year_analysis | month_analysis | daily_analysis
+
+    data = count_data_analysis(all_analysis)
+
+    get_or_create_general_analyse(start_date, end_date, data, period)

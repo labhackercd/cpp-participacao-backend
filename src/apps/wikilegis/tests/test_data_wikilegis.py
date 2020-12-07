@@ -1,15 +1,20 @@
 from datetime import date, timedelta
-
+import calendar
 import pytest
 import responses
 from django.conf import settings
 from mixer.backend.django import mixer
+from random import randrange
+
 from apps.wikilegis.models import (
     DocumentAnalysisWikilegis, GeneralAnalysisWikilegis)
 from apps.wikilegis.tasks import (
     get_or_create_document_analyse, get_or_create_daily_analyse, get_documents,
     get_or_create_general_analyse, count_participation, get_sugestions,
-    remove_fields_from_data_documents, get_opnion_votes, )
+    remove_fields_from_data_documents, get_opnion_votes, count_data_analysis,
+    save_monthly_analysis, save_yearly_analysis, save_all_analysis,
+    get_month_analysis, get_yearly_analysis, get_all_analysis,
+    get_all_period_analysis)
 from .mock_json import (
     MOCK_JSON_VOTES, MOCK_JSON_SUGGESTIONS, MOCK_JSON_DOCUMENTS)
 
@@ -277,3 +282,307 @@ class TestRoomAnalysisWikilegis:
         assert documents.first().end_date == date(2019, 9, 17)
         assert documents.first().data is not None
         assert documents.first().data['suggestions'] > 0
+
+    @pytest.mark.django_db
+    def test_daily_analysis(self):
+        period = 'daily'
+        NUMBER_ANALYSIS = 5
+        mixer.cycle(NUMBER_ANALYSIS).blend(
+            GeneralAnalysisWikilegis, data=self.EXAMPLE_DATA, period=period)
+
+        daily_analysis = GeneralAnalysisWikilegis.objects.all().values('data')
+
+        data = count_data_analysis(daily_analysis)
+
+        assert data['suggestions'] == NUMBER_ANALYSIS * \
+            self.EXAMPLE_DATA['suggestions']
+        assert data['votes'] == NUMBER_ANALYSIS * \
+            self.EXAMPLE_DATA['votes']
+
+    @pytest.mark.django_db
+    def test_save_monthly_analysis(self):
+        NUMBER_ANALYSIS = 5
+        period = 'monthly'
+        today = date.today()
+        random_date = today.replace(day=1)
+
+        for count in range(NUMBER_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=random_date + timedelta(days=count),
+                        end_date=random_date + timedelta(days=count),
+                        data=self.EXAMPLE_DATA)
+
+        save_monthly_analysis(today.month, today.year)
+
+        monthly_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period=period)
+
+        assert GeneralAnalysisWikilegis.objects.count() == NUMBER_ANALYSIS + 1
+        assert monthly_analysis.count() == 1
+        assert monthly_analysis.first(
+        ).data['votes'] == self.EXAMPLE_DATA['votes'] * NUMBER_ANALYSIS
+        assert monthly_analysis.first(
+        ).data['suggestions'] == self.EXAMPLE_DATA['suggestions'] * \
+            NUMBER_ANALYSIS
+
+    @pytest.mark.django_db
+    def test_save_yearly_analysis(self):
+        NUMBER_ANALYSIS = 5
+        period = 'yearly'
+        today = date.today()
+        random_date = date(today.year, 1, 1)
+
+        for count in range(NUMBER_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='monthly',
+                        start_date=random_date + timedelta(days=count*30),
+                        end_date=random_date + timedelta(days=count*30),
+                        data=self.EXAMPLE_DATA)
+
+        save_yearly_analysis(today.year)
+
+        yearly_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period=period)
+
+        assert GeneralAnalysisWikilegis.objects.count() == NUMBER_ANALYSIS + 1
+        assert yearly_analysis.count() == 1
+        assert yearly_analysis.first(
+        ).data['votes'] == self.EXAMPLE_DATA['votes'] * NUMBER_ANALYSIS
+        assert yearly_analysis.first(
+        ).data['suggestions'] == self.EXAMPLE_DATA['suggestions'] * \
+            NUMBER_ANALYSIS
+
+    @pytest.mark.django_db
+    def test_save_all_analysis(self):
+        NUMBER_DAILY_ANALYSIS = 10
+        NUMBER_MONTHLY_ANALYSIS = 5
+        NUMBER_YEARLY_ANALYSIS = 1
+        period = 'all'
+        today = date.today()
+        date_last_year = today.year - 1
+        date_current_year = date(today.year, 1, 1)
+
+        for count in range(NUMBER_DAILY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=today.replace(day=count + 1),
+                        end_date=today.replace(day=count + 1),
+                        data=self.EXAMPLE_DATA)
+
+        for count in range(NUMBER_MONTHLY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='monthly',
+                        start_date=date_current_year.replace(month=count + 1),
+                        end_date=date_current_year.replace(month=count + 1),
+                        data=self.EXAMPLE_DATA)
+
+        mixer.blend(GeneralAnalysisWikilegis, period='yearly',
+                    start_date=date(date_last_year, 1, 1),
+                    end_date=date(date_last_year, 1, 1),
+                    data=self.EXAMPLE_DATA)
+
+        save_all_analysis()
+
+        all_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period=period)
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS + 1)
+        assert all_analysis.count() == 1
+        assert all_analysis.first().data['votes'] == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS) * self.EXAMPLE_DATA['votes']
+        assert all_analysis.first().data['suggestions'] == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS) * self.EXAMPLE_DATA['suggestions']
+
+    @pytest.mark.django_db
+    def test_task_get_month_analysis(self):
+        NUMBER_DAILY_ANALYSIS = 10
+        today = date.today()
+        last_month = today.replace(
+            day=1) - timedelta(days=NUMBER_DAILY_ANALYSIS)
+        range_date = calendar.monthrange(last_month.year, last_month.month)
+        last_day = range_date[1]
+        for count in range(NUMBER_DAILY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=last_month.replace(day=count + 1),
+                        end_date=last_month.replace(day=count + 1),
+                        data=self.EXAMPLE_DATA)
+        get_month_analysis.apply()
+
+        month_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='monthly').first()
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_DAILY_ANALYSIS + 1)
+        assert month_analysis.start_date == date(
+            last_month.year, last_month.month, 1)
+        assert month_analysis.end_date == date(
+            last_month.year, last_month.month, last_day)
+        assert month_analysis.data is not None
+        assert month_analysis.data['votes'] == (
+            NUMBER_DAILY_ANALYSIS * self.EXAMPLE_DATA['votes'])
+        assert month_analysis.data['suggestions'] == (
+            NUMBER_DAILY_ANALYSIS * self.EXAMPLE_DATA['suggestions'])
+
+    @pytest.mark.django_db
+    def test_task_get_month_analysis_with_args(self):
+        NUMBER_DAILY_ANALYSIS = 10
+        today = date.today()
+        last_month = today.replace(
+            day=1) - timedelta(days=NUMBER_DAILY_ANALYSIS)
+        range_date = calendar.monthrange(last_month.year, last_month.month)
+        last_day = range_date[1]
+        for count in range(NUMBER_DAILY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=last_month.replace(day=count + 1),
+                        end_date=last_month.replace(day=count + 1),
+                        data=self.EXAMPLE_DATA)
+        get_month_analysis.apply(args=[last_month.month, last_month.year])
+
+        month_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='monthly').first()
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_DAILY_ANALYSIS + 1)
+        assert month_analysis.start_date == date(
+            last_month.year, last_month.month, 1)
+        assert month_analysis.end_date == date(
+            last_month.year, last_month.month, last_day)
+        assert month_analysis.data is not None
+        assert month_analysis.data['votes'] == (
+            NUMBER_DAILY_ANALYSIS * self.EXAMPLE_DATA['votes'])
+        assert month_analysis.data['suggestions'] == (
+            NUMBER_DAILY_ANALYSIS * self.EXAMPLE_DATA['suggestions'])
+
+    @pytest.mark.django_db
+    def test_task_get_yearly_analysis(self):
+        NUMBER_MONTHLY_ANALYSIS = 12
+        today = date.today()
+        last_year = today.year - 1
+        first_date = date(last_year, 1, 1)
+        for count in range(1, NUMBER_MONTHLY_ANALYSIS + 1):
+            mixer.blend(GeneralAnalysisWikilegis, period='monthly',
+                        start_date=first_date.replace(month=count),
+                        end_date=first_date.replace(month=count),
+                        data=self.EXAMPLE_DATA)
+        get_yearly_analysis.apply()
+
+        month_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='yearly').first()
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_MONTHLY_ANALYSIS + 1)
+        assert month_analysis.start_date == date(last_year, 1, 1)
+        assert month_analysis.end_date == date(last_year, 12, 31)
+        assert month_analysis.data is not None
+        assert month_analysis.data['votes'] == (
+            NUMBER_MONTHLY_ANALYSIS * self.EXAMPLE_DATA['votes'])
+        assert month_analysis.data['suggestions'] == (
+            NUMBER_MONTHLY_ANALYSIS * self.EXAMPLE_DATA['suggestions'])
+
+    @pytest.mark.django_db
+    def test_task_get_yearly_analysis_with_args(self):
+        NUMBER_MONTHLY_ANALYSIS = 12
+        today = date.today()
+        first_date = date(today.year, 1, 1)
+        for count in range(1, NUMBER_MONTHLY_ANALYSIS + 1):
+            mixer.blend(GeneralAnalysisWikilegis, period='monthly',
+                        start_date=first_date.replace(month=count),
+                        end_date=first_date.replace(month=count),
+                        data=self.EXAMPLE_DATA)
+        get_yearly_analysis.apply(args=[today.year])
+
+        month_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='yearly').first()
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_MONTHLY_ANALYSIS + 1)
+        assert month_analysis.start_date == date(today.year, 1, 1)
+        assert month_analysis.end_date == date(today.year, 12, 31)
+        assert month_analysis.data is not None
+        assert month_analysis.data['votes'] == (
+            NUMBER_MONTHLY_ANALYSIS * self.EXAMPLE_DATA['votes'])
+        assert month_analysis.data['suggestions'] == (
+            NUMBER_MONTHLY_ANALYSIS * self.EXAMPLE_DATA['suggestions'])
+
+    @pytest.mark.django_db
+    def test_task_get_all_analysis(self):
+        NUMBER_DAILY_ANALYSIS = 10
+        NUMBER_MONTHLY_ANALYSIS = 5
+        NUMBER_YEARLY_ANALYSIS = 1
+        period = 'all'
+        today = date.today()
+        date_last_year = today.year - 1
+        date_current_year = date(today.year, 1, 1)
+
+        for count in range(NUMBER_DAILY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=today.replace(day=count + 1),
+                        end_date=today.replace(day=count + 1),
+                        data=self.EXAMPLE_DATA)
+
+        for count in range(NUMBER_MONTHLY_ANALYSIS):
+            mixer.blend(GeneralAnalysisWikilegis, period='monthly',
+                        start_date=date_current_year.replace(month=count + 1),
+                        end_date=date_current_year.replace(month=count + 1),
+                        data=self.EXAMPLE_DATA)
+
+        mixer.blend(GeneralAnalysisWikilegis, period='yearly',
+                    start_date=date(date_last_year, 1, 1),
+                    end_date=date(date_last_year, 1, 1),
+                    data=self.EXAMPLE_DATA)
+
+        get_all_analysis.apply()
+
+        all_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period=period)
+
+        assert GeneralAnalysisWikilegis.objects.count() == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS + 1)
+        assert all_analysis.count() == 1
+        assert all_analysis.first().data['votes'] == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS) * self.EXAMPLE_DATA['votes']
+        assert all_analysis.first().data['suggestions'] == (
+            NUMBER_DAILY_ANALYSIS + NUMBER_MONTHLY_ANALYSIS +
+            NUMBER_YEARLY_ANALYSIS) * self.EXAMPLE_DATA['suggestions']
+
+    @pytest.mark.django_db
+    def test_task_get_all_period_analysis(self):
+        NUMBER_DAILY_ANALYSIS = 10
+        today = date.today()
+        FIRST_YEAR = 2019
+        FIRST_MONTH = 1
+        LAST_YEAR = today.year
+        LAST_MONTH = today.month
+
+        start_date = date(FIRST_YEAR, FIRST_MONTH, 31)
+        end_date = date(LAST_YEAR, LAST_MONTH, 1)
+
+        time_between_dates = end_date - start_date
+        days_between_dates = time_between_dates.days
+        for count in range(NUMBER_DAILY_ANALYSIS):
+            random_number_of_days = randrange(days_between_dates)
+            random_date = start_date + timedelta(days=random_number_of_days)
+            mixer.blend(GeneralAnalysisWikilegis, period='daily',
+                        start_date=random_date, end_date=random_date)
+
+        get_all_period_analysis.apply()
+
+        daily_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='daily')
+
+        monthly_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='monthly')
+
+        yearly_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='yearly')
+
+        all_analysis = GeneralAnalysisWikilegis.objects.filter(
+            period='all')
+
+        assert daily_analysis.count() >= 1
+        assert monthly_analysis.count() >= 1
+        assert yearly_analysis.count() >= 1
+        assert all_analysis.count() == 1
