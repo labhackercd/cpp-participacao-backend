@@ -2,6 +2,8 @@ from apiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 from django.conf import settings
 import requests
+from datetime import date
+import calendar
 
 
 def get_service(api_name, api_version, scopes, key_file_location):
@@ -74,3 +76,45 @@ def get_api_objects(url):
         objects += data['results']
 
     return objects
+
+
+def convert_ga_date(ga_date):
+    year = int(ga_date[:4])
+    month = int(ga_date[4:6])
+    day = int(ga_date[6:])
+
+    new_date = date(year, month, day)
+
+    return new_date
+
+
+def compile_ga_data(ga_data, period='daily'):
+
+    if period == 'daily':
+        data = {
+            "date": ga_data[0],
+            "users": ga_data[1],
+            "newUsers": ga_data[2],
+            "sessions": ga_data[3],
+            "pageViews": ga_data[4],
+        }
+        start_date = end_date = convert_ga_date(ga_data[0])
+
+    else:
+        data = {
+            "users": ga_data['total_users'],
+            "newUsers": ga_data['total_newusers'],
+            "sessions": ga_data['total_sessions'],
+            "pageViews": ga_data['total_pageviews'],
+        }
+        if period == 'monthly':
+            start_date = ga_data['month']
+            last_day = calendar.monthrange(start_date.year,
+                                           start_date.month)[1]
+            end_date = start_date.replace(day=last_day)
+
+        elif period == 'yearly':
+            start_date = ga_data['year']
+            end_date = start_date.replace(day=31, month=12)
+
+    return data, start_date, end_date
