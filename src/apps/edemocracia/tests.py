@@ -4,8 +4,6 @@ from apps.edemocracia.models import EdemocraciaGA, EdemocraciaAnalysis
 from django.db import IntegrityError
 from apps.edemocracia.tasks import (get_ga_edemocracia_monthly,
                                     get_ga_edemocracia_yearly,
-                                    convert_ga_date,
-                                    compile_ga_data,
                                     save_registers_count,
                                     get_edemocracia_registers_daily,
                                     get_edemocracia_registers_monthly,
@@ -90,67 +88,6 @@ def test_yearly_get_ga_data():
     assert monthly_data.data['newUsers'] == 30
     assert monthly_data.data['sessions'] == 30
     assert monthly_data.data['pageViews'] == 30
-
-
-def test_convert_ga_date():
-    ga_date_format = '20200101'
-    ga_date = convert_ga_date(ga_date_format)
-
-    assert ga_date == date(2020, 1, 1)
-
-
-def test_compile_ga_data_daily():
-    data_daily = ['20201123', '10', '10', '10', '10']
-    ga_object = compile_ga_data(data_daily, 'daily')
-
-    assert ga_object.period == 'daily'
-    assert ga_object.start_date == date(2020, 11, 23)
-    assert ga_object.end_date == date(2020, 11, 23)
-    assert ga_object.data['date'] == '20201123'
-    assert ga_object.data['users'] == '10'
-    assert ga_object.data['newUsers'] == '10'
-    assert ga_object.data['sessions'] == '10'
-    assert ga_object.data['pageViews'] == '10'
-
-
-def test_compile_ga_data_monthly():
-    data_monthly = {
-        'month': date(2020, 1, 1),
-        'total_users': 10,
-        'total_newusers': 10,
-        'total_sessions': 10,
-        'total_pageviews': 10
-    }
-
-    ga_object = compile_ga_data(data_monthly, 'monthly')
-
-    assert ga_object.period == 'monthly'
-    assert ga_object.start_date == date(2020, 1, 1)
-    assert ga_object.end_date == date(2020, 1, 31)
-    assert ga_object.data['users'] == 10
-    assert ga_object.data['newUsers'] == 10
-    assert ga_object.data['sessions'] == 10
-    assert ga_object.data['pageViews'] == 10
-
-
-def test_compile_ga_data_yearly():
-    data_yearly = {
-        'year': date(2019, 1, 1),
-        'total_users': 10,
-        'total_newusers': 10,
-        'total_sessions': 10,
-        'total_pageviews': 10
-    }
-
-    ga_object = compile_ga_data(data_yearly, 'yearly')
-
-    assert ga_object.period == 'yearly'
-    assert ga_object.start_date == date(2019, 1, 1)
-    assert ga_object.end_date == date(2019, 12, 31)
-    assert ga_object.data['users'] == 10
-    assert ga_object.data['newUsers'] == 10
-    assert ga_object.data['sessions'] == 10
-    assert ga_object.data['pageViews'] == 10
 
 
 def test_save_registers_daily():

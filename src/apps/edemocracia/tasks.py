@@ -8,47 +8,11 @@ from django.db.models.expressions import Value
 import calendar
 from django.conf import settings
 from collections import Counter
+from utils.data import compile_ga_data
 
 
-def convert_ga_date(ga_date):
-    year = int(ga_date[:4])
-    month = int(ga_date[4:6])
-    day = int(ga_date[6:])
-
-    new_date = date(year, month, day)
-
-    return new_date
-
-
-def compile_ga_data(ga_data, period='daily'):
-
-    if period == 'daily':
-        data = {
-            "date": ga_data[0],
-            "users": ga_data[1],
-            "newUsers": ga_data[2],
-            "sessions": ga_data[3],
-            "pageViews": ga_data[4],
-        }
-        start_date = end_date = convert_ga_date(ga_data[0])
-
-    else:
-        data = {
-            "users": ga_data['total_users'],
-            "newUsers": ga_data['total_newusers'],
-            "sessions": ga_data['total_sessions'],
-            "pageViews": ga_data['total_pageviews'],
-        }
-        if period == 'monthly':
-            start_date = ga_data['month']
-            last_day = calendar.monthrange(start_date.year,
-                                           start_date.month)[1]
-            end_date = start_date.replace(day=last_day)
-
-        elif period == 'yearly':
-            start_date = ga_data['year']
-            end_date = start_date.replace(day=31, month=12)
-
+def get_object(ga_data, period='daily'):
+    data, start_date, end_date = compile_ga_data(ga_data, period)
     ga_object = EdemocraciaGA(start_date=start_date, end_date=end_date,
                               data=data, period=period)
 
@@ -72,7 +36,7 @@ def get_ga_edemocracia_daily(ga_id, start_date=None, end_date=None,
     results = get_analytics_data(ga_id, start_date, end_date, metrics,
                                  dimensions, filters, max_results)
 
-    ga_analysis = [compile_ga_data(result, 'daily') for result in results]
+    ga_analysis = [get_object(result, 'daily') for result in results]
 
     EdemocraciaGA.objects.bulk_create(ga_analysis, batch_size,
                                       ignore_conflicts=True)
@@ -113,7 +77,7 @@ def get_ga_edemocracia_monthly(start_date=None):
             ).values('month', 'total_users', 'total_newusers',
                      'total_sessions', 'total_pageviews')
 
-    ga_analysis_monthly = [compile_ga_data(result, 'monthly')
+    ga_analysis_monthly = [get_object(result, 'monthly')
                            for result in data_by_month]
 
     EdemocraciaGA.objects.bulk_create(ga_analysis_monthly, batch_size,
@@ -142,7 +106,7 @@ def get_ga_edemocracia_yearly(start_date=None):
             ).values('year', 'total_users', 'total_newusers',
                      'total_sessions', 'total_pageviews')
 
-    ga_analysis_yearly = [compile_ga_data(result, 'yearly')
+    ga_analysis_yearly = [get_object(result, 'yearly')
                           for result in data_by_year]
 
     EdemocraciaGA.objects.bulk_create(ga_analysis_yearly, batch_size,
