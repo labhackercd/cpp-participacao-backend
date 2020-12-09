@@ -14,6 +14,17 @@ x-backend-variables: &backend-variables
   HOST: db
   PORT: 5432
   REDIS_SERVER: redis://redis:6379
+  LANGUAGE_CODE: pt-br
+  TIME_ZONE: America/Sao_Paulo
+  USE_I18N: "True"
+  USE_L10N: "True"
+  USE_TZ: "True"
+  STATIC_URL: /static/
+  GA_SCOPE: https://www.googleapis.com/auth/analytics.readonly
+  GA_KEY_LOCATION: participacao/key_ga/
+  GA_ID_EDEMOCRACIA:
+  URL_PREFIX:
+  EDEMOCRACIA_URL: https://edemocracia.camara.leg.br
 
 services:
   db:

@@ -1,5 +1,6 @@
 from participacao.celery import app
-from utils.data import get_analytics_data, get_api_objects
+from utils.data import (get_analytics_data, get_api_objects, compile_ga_data,
+                        get_ga_data_fields)
 from .models import EdemocraciaGA, EdemocraciaAnalysis
 from datetime import date, timedelta
 from django.db.models.functions import TruncMonth, TruncYear, Cast
@@ -8,7 +9,6 @@ from django.db.models.expressions import Value
 import calendar
 from django.conf import settings
 from collections import Counter
-from utils.data import compile_ga_data
 
 
 def get_object(ga_data, period='daily'):
@@ -42,19 +42,6 @@ def get_ga_edemocracia_daily(ga_id, start_date=None, end_date=None,
                                       ignore_conflicts=True)
 
 
-def get_data_fields():
-    users = Cast(Func(F('data'), Value('users'),
-                 function='jsonb_extract_path_text'), IntegerField())
-    newusers = Cast(Func(F('data'), Value('newUsers'),
-                    function='jsonb_extract_path_text'), IntegerField())
-    sessions = Cast(Func(F('data'), Value('sessions'),
-                    function='jsonb_extract_path_text'), IntegerField())
-    pageviews = Cast(Func(F('data'), Value('pageViews'),
-                     function='jsonb_extract_path_text'), IntegerField())
-
-    return users, newusers, sessions, pageviews
-
-
 @app.task(name="get_ga_edemocracia_monthly")
 def get_ga_edemocracia_monthly(start_date=None):
     batch_size = 100
@@ -68,7 +55,7 @@ def get_ga_edemocracia_monthly(start_date=None):
         start_date__gte=start_date,
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
-    users, newusers, sessions, pageviews = get_data_fields()
+    users, newusers, sessions, pageviews = get_ga_data_fields()
 
     data_by_month = ga_analysis_daily.annotate(
         month=TruncMonth('start_date')).values('month').annotate(
@@ -97,7 +84,7 @@ def get_ga_edemocracia_yearly(start_date=None):
         start_date__gte=start_date,
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
-    users, newusers, sessions, pageviews = get_data_fields()
+    users, newusers, sessions, pageviews = get_ga_data_fields()
 
     data_by_year = ga_analysis_monthly.annotate(
         year=TruncYear('start_date')).values('year').annotate(

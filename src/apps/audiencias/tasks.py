@@ -1,13 +1,16 @@
 from participacao.celery import app
+from utils.data import get_analytics_data, compile_ga_data
 from .scraping import api_get_rooms
 from apps.audiencias.models import (RoomAnalysisAudiencias,
-                                    GeneralAnalysisAudiencias)
+                                    GeneralAnalysisAudiencias,
+                                    AudienciasGA)
 from datetime import date, timedelta, datetime
 import calendar
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.functions import Cast, Coalesce
 from django.db.models import Func, F, IntegerField, Sum
 from django.db.models.expressions import Value
+from django.conf import settings
 
 
 FIRST_YEAR = 2015
@@ -231,3 +234,35 @@ def save_all_room_analysis():
     data = count_data_analysis(all_analysis, type_analyse)
 
     get_or_create_analyse(start_date, end_date, data, period)
+
+
+def get_object(ga_data, period='daily'):
+    data, start_date, end_date = compile_ga_data(ga_data, period)
+    ga_object = AudienciasGA(start_date=start_date, end_date=end_date,
+                             data=data, period=period)
+
+    return ga_object
+
+
+@app.task(name="get_ga_audiencias_daily")
+def get_ga_audiencias_daily(start_date=None, end_date=None, max_results=10000):
+    batch_size = 100
+    yesterday = date.today() - timedelta(days=1)
+    metrics = ['ga:users', 'ga:newUsers', 'ga:sessions', 'ga:pageviews']
+    dimensions = ['ga:date']
+    filters = ['ga:pagePathLevel1=@/audiencias']
+    ga_id = settings.GA_ID_EDEMOCRACIA
+
+    if not start_date:
+        start_date = yesterday.strftime('%Y-%m-%d')
+
+    if not end_date:
+        end_date = yesterday.strftime('%Y-%m-%d')
+
+    results = get_analytics_data(ga_id, start_date, end_date, metrics,
+                                 dimensions, filters)
+
+    ga_analysis = [get_object(result, 'daily') for result in results]
+
+    AudienciasGA.objects.bulk_create(ga_analysis, batch_size,
+                                     ignore_conflicts=True)
