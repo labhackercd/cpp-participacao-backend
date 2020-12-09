@@ -4,6 +4,9 @@ from django.conf import settings
 import requests
 from datetime import date
 import calendar
+from django.db.models import Func, F, IntegerField
+from django.db.models.expressions import Value
+from django.db.models.functions import Cast
 
 
 def get_service(api_name, api_version, scopes, key_file_location):
@@ -119,3 +122,16 @@ def compile_ga_data(ga_data, period='daily'):
             end_date = start_date.replace(day=31, month=12)
 
     return data, start_date, end_date
+
+
+def get_ga_data_fields():
+    users = Cast(Func(F('data'), Value('users'),
+                 function='jsonb_extract_path_text'), IntegerField())
+    newusers = Cast(Func(F('data'), Value('newUsers'),
+                    function='jsonb_extract_path_text'), IntegerField())
+    sessions = Cast(Func(F('data'), Value('sessions'),
+                    function='jsonb_extract_path_text'), IntegerField())
+    pageviews = Cast(Func(F('data'), Value('pageViews'),
+                     function='jsonb_extract_path_text'), IntegerField())
+
+    return users, newusers, sessions, pageviews
