@@ -1,8 +1,7 @@
 from participacao.celery import app
-from utils.data import get_analytics_data
+from utils.data import get_analytics_data, compile_ga_data
 from .models import PautasGA
 from datetime import date, timedelta
-from utils.data import compile_ga_data
 
 
 def get_object(ga_data, period='daily'):

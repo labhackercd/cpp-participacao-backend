@@ -18,7 +18,7 @@ class GeneralAnalysisAudiencias(AnalysisMixin):
         unique_together = ('start_date', 'period')
 
 
-class AudienciaGA(AnalysisMixin):
+class AudienciasGA(AnalysisMixin):
     pass
 
     class Meta:

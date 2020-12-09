@@ -140,8 +140,11 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/Sao_Paulo'
 
 # Google Analytics
-GA_SCOPE = config('GA_SCOPE', default='')
-GA_KEY = config('GA_KEY', default='')
+GA_SCOPE = config('GA_SCOPE',
+                  default='https://www.googleapis.com/auth/analytics.readonly')
+GA_KEY_LOCATION = BASE_DIR + '/' + \
+    config('GA_KEY_LOCATION', default='participacao/key_ga/')
+GA_ID_EDEMOCRACIA = config('GA_ID_EDEMOCRACIA', default="99999")
 
 # Url prefix
 URL_PREFIX = config('URL_PREFIX', default='')

@@ -20,7 +20,7 @@ def get_service(api_name, api_version, scopes, key_file_location):
     """
 
     credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            key_file_location, scopes=scopes)
+        key_file_location, scopes=scopes)
 
     # Build the service object.
     service = build(api_name, api_version, credentials=credentials)
@@ -30,12 +30,13 @@ def get_service(api_name, api_version, scopes, key_file_location):
 
 def get_analytics_data(ga_id, start_date, end_date, metrics=[], dimensions=[],
                        filters=[], max_results=10000):
-
+    file_name = 'json-key-edemocracia.json'
     service = get_service(
         api_name='analytics',
         api_version='v3',
         scopes=[settings.GA_SCOPE],
-        key_file_location=settings.GA_KEY)
+        key_file_location=settings.GA_KEY_LOCATION + file_name
+    )
 
     params = {
         'ids': 'ga:' + ga_id,
