@@ -4,7 +4,6 @@ import pytest
 import responses
 from django.conf import settings
 from mixer.backend.django import mixer
-from random import randrange
 
 from apps.wikilegis.models import (
     DocumentAnalysisWikilegis, GeneralAnalysisWikilegis)
@@ -550,23 +549,14 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     def test_task_get_all_period_analysis(self):
-        NUMBER_DAILY_ANALYSIS = 10
-        today = date.today()
-        FIRST_YEAR = 2019
-        FIRST_MONTH = 1
-        LAST_YEAR = today.year
-        LAST_MONTH = today.month
+        NUMBER_DAILY_ANALYSIS = 5
+        list_dates = ['2019-01-01', '2019-02-01',
+                      '2019-03-01', '2019-11-01', '2020-01-01']
 
-        start_date = date(FIRST_YEAR, FIRST_MONTH, 31)
-        end_date = date(LAST_YEAR, LAST_MONTH, 1)
-
-        time_between_dates = end_date - start_date
-        days_between_dates = time_between_dates.days
         for count in range(NUMBER_DAILY_ANALYSIS):
-            random_number_of_days = randrange(days_between_dates)
-            random_date = start_date + timedelta(days=random_number_of_days)
             mixer.blend(GeneralAnalysisWikilegis, period='daily',
-                        start_date=random_date, end_date=random_date)
+                        start_date=list_dates[count],
+                        end_date=list_dates[count])
 
         get_all_period_analysis.apply()
 

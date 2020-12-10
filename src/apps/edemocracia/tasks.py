@@ -1,6 +1,7 @@
 from participacao.celery import app
 from utils.data import (get_analytics_data, get_api_objects, compile_ga_data,
-                        get_ga_data_fields)
+                        sum_values_monthly_analysis,
+                        sum_values_yearly_analysis)
 from .models import EdemocraciaGA, EdemocraciaAnalysis
 from datetime import date, timedelta
 from django.db.models.functions import TruncMonth, TruncYear, Cast
@@ -20,8 +21,9 @@ def get_object(ga_data, period='daily'):
 
 
 @app.task(name="get_ga_edemocracia_daily")
-def get_ga_edemocracia_daily(ga_id, start_date=None, end_date=None,
+def get_ga_edemocracia_daily(start_date=None, end_date=None,
                              filters=[], max_results=10000):
+    ga_id = settings.GA_ID_EDEMOCRACIA
     batch_size = 100
     yesterday = date.today() - timedelta(days=1)
     metrics = ['ga:users', 'ga:newUsers', 'ga:sessions', 'ga:pageviews']
@@ -55,14 +57,7 @@ def get_ga_edemocracia_monthly(start_date=None):
         start_date__gte=start_date,
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
-    users, newusers, sessions, pageviews = get_ga_data_fields()
-
-    data_by_month = ga_analysis_daily.annotate(
-        month=TruncMonth('start_date')).values('month').annotate(
-            total_users=Sum(users), total_newusers=Sum(newusers),
-            total_sessions=Sum(sessions), total_pageviews=Sum(pageviews)
-            ).values('month', 'total_users', 'total_newusers',
-                     'total_sessions', 'total_pageviews')
+    data_by_month = sum_values_monthly_analysis(ga_analysis_daily)
 
     ga_analysis_monthly = [get_object(result, 'monthly')
                            for result in data_by_month]
@@ -84,14 +79,7 @@ def get_ga_edemocracia_yearly(start_date=None):
         start_date__gte=start_date,
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
-    users, newusers, sessions, pageviews = get_ga_data_fields()
-
-    data_by_year = ga_analysis_monthly.annotate(
-        year=TruncYear('start_date')).values('year').annotate(
-            total_users=Sum(users), total_newusers=Sum(newusers),
-            total_sessions=Sum(sessions), total_pageviews=Sum(pageviews)
-            ).values('year', 'total_users', 'total_newusers',
-                     'total_sessions', 'total_pageviews')
+    data_by_year = sum_values_yearly_analysis(ga_analysis_monthly)
 
     ga_analysis_yearly = [get_object(result, 'yearly')
                           for result in data_by_year]
@@ -161,7 +149,8 @@ def get_edemocracia_registers_monthly(start_date=None):
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
     registers_count = Cast(Func(F('data'), Value('register_count'),
-                           function='jsonb_extract_path_text'), IntegerField())
+                                function='jsonb_extract_path_text'),
+                           IntegerField())
 
     data_by_month = registers_daily.annotate(
         month=TruncMonth('start_date')).values('month').annotate(
@@ -189,7 +178,8 @@ def get_edemocracia_registers_yearly(start_date=None):
         end_date__lte=end_date.strftime('%Y-%m-%d'))
 
     registers_count = Cast(Func(F('data'), Value('register_count'),
-                           function='jsonb_extract_path_text'), IntegerField())
+                                function='jsonb_extract_path_text'),
+                           IntegerField())
 
     data_by_year = registers_monthly.annotate(
         year=TruncYear('start_date')).values('year').annotate(
