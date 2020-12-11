@@ -10,7 +10,9 @@ from django.db.models.functions import Cast, Coalesce
 from django.db.models import Func, F, IntegerField, Sum
 from django.db.models.expressions import Value
 from django.conf import settings
-from utils.data import (get_analytics_data, compile_ga_data)
+from utils.data import (get_analytics_data, compile_ga_data,
+                        sum_values_monthly_analysis,
+                        sum_values_yearly_analysis)
 
 FIRST_YEAR = 2019
 FIRST_MONTH = 1
@@ -264,4 +266,48 @@ def get_ga_wikilegis_daily(start_date=None, end_date=None, max_results=10000):
     ga_analysis = [get_object(result, 'daily') for result in results]
 
     WikilegisGA.objects.bulk_create(ga_analysis, batch_size,
+                                    ignore_conflicts=True)
+
+
+@app.task(name="get_ga_wikilegis_monthly")
+def get_ga_wikilegis_monthly(start_date=None):
+    batch_size = 100
+    end_date = date.today().replace(day=1) - timedelta(days=1)
+
+    if not start_date:
+        start_date = end_date.replace(day=1)
+
+    ga_analysis_daily = WikilegisGA.objects.filter(
+        period='daily',
+        start_date__gte=start_date,
+        end_date__lte=end_date)
+
+    data_by_month = sum_values_monthly_analysis(ga_analysis_daily)
+
+    ga_analysis_monthly = [get_object(result, 'monthly')
+                           for result in data_by_month]
+
+    WikilegisGA.objects.bulk_create(ga_analysis_monthly, batch_size,
+                                    ignore_conflicts=True)
+
+
+@app.task(name="get_ga_wikilegis_yearly")
+def get_ga_wikilegis_yearly(start_date=None):
+    batch_size = 100
+    end_date = date.today().replace(day=1, month=1) - timedelta(days=1)
+
+    if not start_date:
+        start_date = end_date.replace(day=1, month=1)
+
+    ga_analysis_monthly = WikilegisGA.objects.filter(
+        period='monthly',
+        start_date__gte=start_date,
+        end_date__lte=end_date)
+
+    data_by_year = sum_values_yearly_analysis(ga_analysis_monthly)
+
+    ga_analysis_yearly = [get_object(result, 'yearly')
+                          for result in data_by_year]
+
+    WikilegisGA.objects.bulk_create(ga_analysis_yearly, batch_size,
                                     ignore_conflicts=True)
