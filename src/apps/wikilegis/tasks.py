@@ -1,7 +1,7 @@
 from participacao.celery import app
 from .scraping import api_get_participations
 from apps.wikilegis.models import (
-    GeneralAnalysisWikilegis, DocumentAnalysisWikilegis)
+    GeneralAnalysisWikilegis, DocumentAnalysisWikilegis, WikilegisGA)
 from django.core.exceptions import ObjectDoesNotExist
 from collections import Counter
 from datetime import date, timedelta
@@ -9,6 +9,8 @@ import calendar
 from django.db.models.functions import Cast, Coalesce
 from django.db.models import Func, F, IntegerField, Sum
 from django.db.models.expressions import Value
+from django.conf import settings
+from utils.data import (get_analytics_data, compile_ga_data)
 
 FIRST_YEAR = 2019
 FIRST_MONTH = 1
@@ -101,33 +103,18 @@ def get_documents(periods=None):
         document_analysis, batch_size, ignore_conflicts=True)
 
 
-@app.task(name="wikilegis.get_opnion_votes")
-def get_opnion_votes(periods=None):
-    type_analyse = 'votes'
+@app.task(name="wikilegis.get_participations")
+def get_participations(periods=None, type_analyse=None):
+    if not type_analyse:
+        return 'Error missing type_analyse, choose votes or suggestions'
     if periods is None:
         periods = 'today'
-    votes = api_get_participations(periods, type_analyse)
-    votes_count = count_participation(votes)
+    participations = api_get_participations(periods, type_analyse)
+    participations_count = count_participation(participations)
     batch_size = 100
 
     general_analysis = [get_or_create_daily_analyse(
-        data, type_analyse) for data in votes_count]
-
-    GeneralAnalysisWikilegis.objects.bulk_create(
-        general_analysis, batch_size, ignore_conflicts=True)
-
-
-@app.task(name="wikilegis.get_sugestions")
-def get_sugestions(periods=None):
-    type_analyse = 'suggestions'
-    if periods is None:
-        periods = 'today'
-    suggestions = api_get_participations(periods, type_analyse)
-    suggestions_count = count_participation(suggestions)
-    batch_size = 100
-
-    general_analysis = [get_or_create_daily_analyse(
-        data, type_analyse) for data in suggestions_count]
+        data, type_analyse) for data in participations_count]
 
     GeneralAnalysisWikilegis.objects.bulk_create(
         general_analysis, batch_size, ignore_conflicts=True)
@@ -246,3 +233,35 @@ def save_all_analysis():
     data = count_data_analysis(all_analysis)
 
     get_or_create_general_analyse(start_date, end_date, data, period)
+
+
+def get_object(ga_data, period='daily'):
+    data, start_date, end_date = compile_ga_data(ga_data, period)
+    ga_object = WikilegisGA(start_date=start_date, end_date=end_date,
+                            data=data, period=period)
+
+    return ga_object
+
+
+@app.task(name="get_ga_wikilegis_daily")
+def get_ga_wikilegis_daily(start_date=None, end_date=None, max_results=10000):
+    batch_size = 100
+    yesterday = date.today() - timedelta(days=1)
+    metrics = ['ga:users', 'ga:newUsers', 'ga:sessions', 'ga:pageviews']
+    dimensions = ['ga:date']
+    filters = ['ga:pagePathLevel1=@/wikilegis']
+    ga_id = settings.GA_ID_EDEMOCRACIA
+
+    if not start_date:
+        start_date = yesterday.strftime('%Y-%m-%d')
+
+    if not end_date:
+        end_date = yesterday.strftime('%Y-%m-%d')
+
+    results = get_analytics_data(ga_id, start_date, end_date, metrics,
+                                 dimensions, filters)
+
+    ga_analysis = [get_object(result, 'daily') for result in results]
+
+    WikilegisGA.objects.bulk_create(ga_analysis, batch_size,
+                                    ignore_conflicts=True)
