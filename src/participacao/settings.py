@@ -25,9 +25,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_beat',
-    'django_celery_results',
-    'django_extensions',
 
     # Apps
     'apps.audiencias',
@@ -35,10 +32,13 @@ INSTALLED_APPS = [
     'apps.pauta',
     'apps.wikilegis',
 
-
     # Third apps
+    'django_celery_beat',
+    'django_celery_results',
+    'django_extensions',
     'corsheaders',
     'django_json_widget',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
