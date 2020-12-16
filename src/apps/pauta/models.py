@@ -6,3 +6,10 @@ class PautasGA(AnalysisMixin):
 
     class Meta:
         unique_together = ('start_date', 'period')
+
+
+class PautasVotesAnalysis(AnalysisMixin):
+    pass
+
+    class Meta:
+        unique_together = ('start_date', 'period')

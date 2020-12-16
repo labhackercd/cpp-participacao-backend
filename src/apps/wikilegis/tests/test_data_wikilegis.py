@@ -4,14 +4,13 @@ import pytest
 import responses
 from django.conf import settings
 from mixer.backend.django import mixer
-from random import randrange
 
 from apps.wikilegis.models import (
     DocumentAnalysisWikilegis, GeneralAnalysisWikilegis)
 from apps.wikilegis.tasks import (
     get_or_create_document_analyse, get_or_create_daily_analyse, get_documents,
-    get_or_create_general_analyse, count_participation, get_sugestions,
-    remove_fields_from_data_documents, get_opnion_votes, count_data_analysis,
+    get_or_create_general_analyse, count_participation,
+    remove_fields_from_data_documents, get_participations, count_data_analysis,
     save_monthly_analysis, save_yearly_analysis, save_all_analysis,
     get_month_analysis, get_yearly_analysis, get_all_analysis,
     get_all_period_analysis)
@@ -203,14 +202,14 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     @responses.activate
-    def test_task_all_get_opnion_votes(self):
+    def test_task_all_opnion_votes_get_participations(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
         url = settings.EDEMOCRACIA_URL + self.PATH_WIKILEGIS + \
             'opnion-votes/?created__lte={}'.format(
                 yesterday.strftime('%Y-%m-%d'))
         responses.add(responses.GET, url, json=MOCK_JSON_VOTES, status=200)
-        get_opnion_votes.apply(args=['all'])
+        get_participations.apply(args=['all', 'votes'])
 
         documents = GeneralAnalysisWikilegis.objects.all()
 
@@ -223,14 +222,14 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     @responses.activate
-    def test_task_today_get_opnion_votes(self):
+    def test_task_today_opnion_votes_get_participations(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
         url = settings.EDEMOCRACIA_URL + self.PATH_WIKILEGIS + \
             'opnion-votes/?created__gte={}'.format(
                 yesterday.strftime('%Y-%m-%d'))
         responses.add(responses.GET, url, json=MOCK_JSON_VOTES, status=200)
-        get_opnion_votes.apply()
+        get_participations.apply(args=[None, 'votes'])
 
         documents = GeneralAnalysisWikilegis.objects.all()
 
@@ -243,7 +242,7 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     @responses.activate
-    def test_task_all_get_sugestions(self):
+    def test_task_all_sugestions_get_participations(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
         url = settings.EDEMOCRACIA_URL + self.PATH_WIKILEGIS + \
@@ -251,7 +250,7 @@ class TestRoomAnalysisWikilegis:
                 yesterday.strftime('%Y-%m-%d'))
         responses.add(responses.GET, url,
                       json=MOCK_JSON_SUGGESTIONS, status=200)
-        get_sugestions.apply(args=['all'])
+        get_participations.apply(args=['all', 'suggestions'])
 
         documents = GeneralAnalysisWikilegis.objects.all()
 
@@ -264,7 +263,7 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     @responses.activate
-    def test_task_today_get_sugestions(self):
+    def test_task_today_sugestions_get_participations(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
         url = settings.EDEMOCRACIA_URL + self.PATH_WIKILEGIS + \
@@ -272,7 +271,7 @@ class TestRoomAnalysisWikilegis:
                 yesterday.strftime('%Y-%m-%d'))
         responses.add(responses.GET, url,
                       json=MOCK_JSON_SUGGESTIONS, status=200)
-        get_sugestions.apply()
+        get_participations.apply(args=[None, 'suggestions'])
 
         documents = GeneralAnalysisWikilegis.objects.all()
 
@@ -282,6 +281,20 @@ class TestRoomAnalysisWikilegis:
         assert documents.first().end_date == date(2019, 9, 17)
         assert documents.first().data is not None
         assert documents.first().data['suggestions'] > 0
+
+    @pytest.mark.django_db
+    @responses.activate
+    def test_task_get_participations_error_type_analyse(self):
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        url = settings.EDEMOCRACIA_URL + self.PATH_WIKILEGIS + \
+            'sugestions/?created__gte={}'.format(
+                yesterday.strftime('%Y-%m-%d'))
+        responses.add(responses.GET, url,
+                      json=MOCK_JSON_SUGGESTIONS, status=200)
+        reponse = get_participations.apply()
+        assert reponse.result == (
+            'Error missing type_analyse, choose votes or suggestions')
 
     @pytest.mark.django_db
     def test_daily_analysis(self):
@@ -550,23 +563,14 @@ class TestRoomAnalysisWikilegis:
 
     @pytest.mark.django_db
     def test_task_get_all_period_analysis(self):
-        NUMBER_DAILY_ANALYSIS = 10
-        today = date.today()
-        FIRST_YEAR = 2019
-        FIRST_MONTH = 1
-        LAST_YEAR = today.year
-        LAST_MONTH = today.month
+        NUMBER_DAILY_ANALYSIS = 5
+        list_dates = ['2019-01-01', '2019-02-01',
+                      '2019-03-01', '2019-11-01', '2020-01-01']
 
-        start_date = date(FIRST_YEAR, FIRST_MONTH, 31)
-        end_date = date(LAST_YEAR, LAST_MONTH, 1)
-
-        time_between_dates = end_date - start_date
-        days_between_dates = time_between_dates.days
         for count in range(NUMBER_DAILY_ANALYSIS):
-            random_number_of_days = randrange(days_between_dates)
-            random_date = start_date + timedelta(days=random_number_of_days)
             mixer.blend(GeneralAnalysisWikilegis, period='daily',
-                        start_date=random_date, end_date=random_date)
+                        start_date=list_dates[count],
+                        end_date=list_dates[count])
 
         get_all_period_analysis.apply()
 

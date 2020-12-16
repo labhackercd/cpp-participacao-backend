@@ -3,7 +3,6 @@ import calendar
 
 import pytest
 import responses
-from random import randrange
 from django.conf import settings
 from django.db import IntegrityError
 from mixer.backend.django import mixer
@@ -411,23 +410,13 @@ class TestRoomAnalysisAudiencias:
 
     @pytest.mark.django_db
     def test_get_all_room_analysis(self):
-        NUMBER_ROOMS = 10
-        today = date.today()
-        FIRST_YEAR = 2015
-        FIRST_MONTH = 1
-        LAST_YEAR = today.year
-        LAST_MONTH = today.month
+        NUMBER_ROOMS = 3
+        list_dates = ['2015-01-01', '2016-02-01', '2017-03-01']
 
-        start_date = date(FIRST_YEAR, FIRST_MONTH, 31)
-        end_date = date(LAST_YEAR, LAST_MONTH, 1)
-
-        time_between_dates = end_date - start_date
-        days_between_dates = time_between_dates.days
         for count in range(NUMBER_ROOMS):
-            random_number_of_days = randrange(days_between_dates)
-            random_date = start_date + timedelta(days=random_number_of_days)
             mixer.blend(RoomAnalysisAudiencias, period='daily',
-                        start_date=random_date, end_date=random_date)
+                        start_date=list_dates[count],
+                        end_date=list_dates[count])
 
         get_all_room_analysis.apply()
 

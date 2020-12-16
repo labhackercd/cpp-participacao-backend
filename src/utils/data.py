@@ -7,6 +7,8 @@ import calendar
 from django.db.models import Func, F, IntegerField
 from django.db.models.expressions import Value
 from django.db.models.functions import Cast
+from django.db.models.functions import TruncMonth, TruncYear
+from django.db.models import Sum
 
 
 def get_service(api_name, api_version, scopes, key_file_location):
@@ -82,6 +84,18 @@ def get_api_objects(url):
     return objects
 
 
+def get_tastypie_api_objects(url):
+    data = requests.get(url).json()
+    objects = data['objects']
+
+    while(data['meta']['next']):
+        data = requests.get(
+            settings.EDEMOCRACIA_URL + data['meta']['next']).json()
+        objects += data['objects']
+
+    return objects
+
+
 def convert_ga_date(ga_date):
     year = int(ga_date[:4])
     month = int(ga_date[4:6])
@@ -126,12 +140,36 @@ def compile_ga_data(ga_data, period='daily'):
 
 def get_ga_data_fields():
     users = Cast(Func(F('data'), Value('users'),
-                 function='jsonb_extract_path_text'), IntegerField())
+                      function='jsonb_extract_path_text'), IntegerField())
     newusers = Cast(Func(F('data'), Value('newUsers'),
-                    function='jsonb_extract_path_text'), IntegerField())
+                         function='jsonb_extract_path_text'), IntegerField())
     sessions = Cast(Func(F('data'), Value('sessions'),
-                    function='jsonb_extract_path_text'), IntegerField())
+                         function='jsonb_extract_path_text'), IntegerField())
     pageviews = Cast(Func(F('data'), Value('pageViews'),
-                     function='jsonb_extract_path_text'), IntegerField())
+                          function='jsonb_extract_path_text'), IntegerField())
 
     return users, newusers, sessions, pageviews
+
+
+def sum_values_monthly_analysis(ga_analysis_daily):
+    users, newusers, sessions, pageviews = get_ga_data_fields()
+    values_analysis = ga_analysis_daily.annotate(
+        month=TruncMonth('start_date')).values('month').annotate(
+        total_users=Sum(users), total_newusers=Sum(newusers),
+        total_sessions=Sum(sessions), total_pageviews=Sum(pageviews)
+    ).values('month', 'total_users', 'total_newusers',
+             'total_sessions', 'total_pageviews')
+
+    return values_analysis
+
+
+def sum_values_yearly_analysis(ga_analysis_monthly):
+    users, newusers, sessions, pageviews = get_ga_data_fields()
+    values_analysis = ga_analysis_monthly.annotate(
+        year=TruncYear('start_date')).values('year').annotate(
+            total_users=Sum(users), total_newusers=Sum(newusers),
+            total_sessions=Sum(sessions), total_pageviews=Sum(pageviews)
+    ).values('year', 'total_users', 'total_newusers',
+             'total_sessions', 'total_pageviews')
+
+    return values_analysis
