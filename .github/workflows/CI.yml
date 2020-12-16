@@ -1,0 +1,31 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Up docker containers
+        run: docker-compose up -d
+      - name: List containers is running
+        run: docker-compose ps
+      - name: Run tests from Flake8
+        run: docker-compose run backend sh -c "flake8 src"
+      - name: Run tests with Pytest and Converage
+        run: docker-compose run backend sh -c "coverage run -m pytest src"
+      - name: Coverage report
+        run: docker-compose run backend sh -c "coverage report"
+      - name: Convert report to XML
+        run: docker-compose run backend sh -c "coverage xml > coverage.xml"
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          verbose: true
