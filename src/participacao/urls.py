@@ -23,7 +23,7 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="labhacker@camara.leg.br"),
         license=openapi.License(name="GNU General Public License v3.0"),
     ),
-    url=settings.SITE_DOMAIN + prefix + "api/",
+    url=prefix + "api/",
     public=True,
     permission_classes=(permissions.AllowAny,),
 )

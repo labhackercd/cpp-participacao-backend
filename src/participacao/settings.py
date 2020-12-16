@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'django_extensions',
+    'rest_framework',
     'corsheaders',
     'django_json_widget',
     'drf_yasg',
@@ -145,6 +146,13 @@ GA_SCOPE = config('GA_SCOPE',
 GA_KEY_LOCATION = BASE_DIR + '/' + \
     config('GA_KEY_LOCATION', default='participacao/key_ga/')
 GA_ID_EDEMOCRACIA = config('GA_ID_EDEMOCRACIA', default="99999")
+
+# Django Rest Framework
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly'
+    ]
+}
 
 # Url prefix
 URL_PREFIX = config('URL_PREFIX', default='')
