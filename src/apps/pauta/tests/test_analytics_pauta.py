@@ -5,6 +5,9 @@ from django.db import IntegrityError
 from apps.pauta.tasks import (get_ga_pautas_daily,
                               get_ga_pautas_monthly,
                               get_ga_pautas_yearly)
+from datetime import date, timedelta
+
+DATE_FORMAT = '%Y-%m-%d'
 
 
 class TestGAPautas:
@@ -47,6 +50,25 @@ class TestGAPautas:
         assert monthly_data.data['pageViews'] == 50
 
     @pytest.mark.django_db
+    def test_monthly_get_pautas_ga_data_without_start_date(self):
+        end_date = date.today().replace(day=1) - timedelta(days=1)
+        str_date = end_date.strftime(DATE_FORMAT)
+        json_data = {"date": "00000000", "users": 10, "newUsers": 10,
+                     "sessions": 10, "pageViews": 10}
+
+        mixer.blend(PautasGA, period='daily', data=json_data,
+                    start_date=str_date, end_date=str_date)
+
+        get_ga_pautas_monthly.apply()
+
+        monthly_data = PautasGA.objects.filter(period='monthly').first()
+
+        assert monthly_data.data['users'] == 10
+        assert monthly_data.data['newUsers'] == 10
+        assert monthly_data.data['sessions'] == 10
+        assert monthly_data.data['pageViews'] == 10
+
+    @pytest.mark.django_db
     def test_yearly_get_pautas_ga_data(self):
         json_data = {"users": 10, "newUsers": 10,
                      "sessions": 10, "pageViews": 10}
@@ -64,6 +86,24 @@ class TestGAPautas:
         assert monthly_data.data['newUsers'] == 30
         assert monthly_data.data['sessions'] == 30
         assert monthly_data.data['pageViews'] == 30
+
+    @pytest.mark.django_db
+    def test_yearly_get_pautas_ga_data_without_start_date(self):
+        json_data = {"users": 10, "newUsers": 10,
+                     "sessions": 10, "pageViews": 10}
+        end_date = date.today().replace(day=1, month=1) - timedelta(days=1)
+        str_date = end_date.strftime(DATE_FORMAT)
+        mixer.blend(PautasGA, period='monthly', data=json_data,
+                    start_date=str_date, end_date=str_date)
+
+        get_ga_pautas_yearly.apply()
+
+        monthly_data = PautasGA.objects.filter(period='yearly').first()
+
+        assert monthly_data.data['users'] == 10
+        assert monthly_data.data['newUsers'] == 10
+        assert monthly_data.data['sessions'] == 10
+        assert monthly_data.data['pageViews'] == 10
 
     @pytest.mark.django_db
     def test_get_ga_pautas_daily(self, mocker):

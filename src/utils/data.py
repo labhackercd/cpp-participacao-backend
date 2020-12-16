@@ -84,6 +84,18 @@ def get_api_objects(url):
     return objects
 
 
+def get_tastypie_api_objects(url):
+    data = requests.get(url).json()
+    objects = data['objects']
+
+    while(data['meta']['next']):
+        data = requests.get(
+            settings.EDEMOCRACIA_URL + data['meta']['next']).json()
+        objects += data['objects']
+
+    return objects
+
+
 def convert_ga_date(ga_date):
     year = int(ga_date[:4])
     month = int(ga_date[4:6])
