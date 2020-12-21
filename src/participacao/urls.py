@@ -4,7 +4,6 @@ from django.conf import settings
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from django.conf.urls.static import static
 
 
 if settings.URL_PREFIX:
@@ -23,7 +22,6 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="labhacker@camara.leg.br"),
         license=openapi.License(name="GNU General Public License v3.0"),
     ),
-    url=prefix + "api/",
     public=True,
     permission_classes=(permissions.AllowAny,),
 )
@@ -37,12 +35,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0),
          name='schema-redoc'),
     path('admin/', admin.site.urls),
+    path('api/', include('apps.wikilegis.urls'))
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
-
-urlpatterns = [path(prefix, include(urlpatterns))]
 
 admin.site.site_header = 'CPP Participação Backend'
