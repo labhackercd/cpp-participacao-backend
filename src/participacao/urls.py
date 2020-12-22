@@ -35,7 +35,8 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0),
          name='schema-redoc'),
     path('admin/', admin.site.urls),
-    path('api/', include('apps.wikilegis.urls'))
+    path('api/wikilegis/', include('apps.wikilegis.urls')),
+    path('api/audiencias/', include('apps.audiencias.urls'))
 ]
 
 admin.site.site_header = 'CPP Participação Backend'
